@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hpcloud/tail/ratelimiter"
-	"github.com/hpcloud/tail/watch"
+	"github.com/feiyuw/tail/ratelimiter"
+	"github.com/feiyuw/tail/watch"
 )
 
 func init() {
@@ -79,7 +79,7 @@ func TestWaitsForFileToExistRelativePath(t *testing.T) {
 	go tailTest.VerifyTailOutput(tail, []string{"hello", "world"}, false)
 
 	<-time.After(100 * time.Millisecond)
-	if err := ioutil.WriteFile("test.txt", []byte("hello\nworld\n"), 0600); err != nil {
+	if err := ioutil.WriteFile("test.txt", []byte("hello\nworld\n"), 0o600); err != nil {
 		tailTest.Fatal(err)
 	}
 	tailTest.Cleanup(tail, true)
@@ -134,6 +134,7 @@ func TestOver4096ByteLine(t *testing.T) {
 	tailTest.RemoveFile("test.txt")
 	tailTest.Cleanup(tail, true)
 }
+
 func TestOver4096ByteLineWithSetMaxLineSize(t *testing.T) {
 	tailTest := NewTailTest("Over4096ByteLineMaxLineSize", t)
 	testString := strings.Repeat("a", 4097)
@@ -235,7 +236,8 @@ func TestRateLimiting(t *testing.T) {
 	tailTest.CreateFile("test.txt", "hello\nworld\nagain\nextra\n")
 	config := Config{
 		Follow:      true,
-		RateLimiter: ratelimiter.NewLeakyBucket(2, time.Second)}
+		RateLimiter: ratelimiter.NewLeakyBucket(2, time.Second),
+	}
 	leakybucketFull := "Too much log activity; waiting a second before resuming tailing"
 	tail := tailTest.StartTail("test.txt", config)
 
@@ -244,7 +246,8 @@ func TestRateLimiting(t *testing.T) {
 		"hello", "world", "again",
 		leakybucketFull,
 		"more", "data",
-		leakybucketFull}, false)
+		leakybucketFull,
+	}, false)
 
 	// Add more data only after reasonable delay.
 	<-time.After(1200 * time.Millisecond)
@@ -263,7 +266,8 @@ func TestTell(t *testing.T) {
 	tailTest.CreateFile("test.txt", "hello\nworld\nagain\nmore\n")
 	config := Config{
 		Follow:   false,
-		Location: &SeekInfo{0, os.SEEK_SET}}
+		Location: &SeekInfo{0, os.SEEK_SET},
+	}
 	tail := tailTest.StartTail("test.txt", config)
 	// read noe line
 	<-tail.Lines
@@ -276,7 +280,8 @@ func TestTell(t *testing.T) {
 
 	config = Config{
 		Follow:   false,
-		Location: &SeekInfo{offset, os.SEEK_SET}}
+		Location: &SeekInfo{offset, os.SEEK_SET},
+	}
 	tail = tailTest.StartTail("test.txt", config)
 	for l := range tail.Lines {
 		// it may readed one line in the chan(tail.Lines),
@@ -418,7 +423,8 @@ func reSeek(t *testing.T, poll bool) {
 		Config{Follow: true, ReOpen: false, Poll: poll})
 
 	go tailTest.VerifyTailOutput(tail, []string{
-		"a really long string goes here", "hello", "world", "h311o", "w0r1d", "endofworld"}, false)
+		"a really long string goes here", "hello", "world", "h311o", "w0r1d", "endofworld",
+	}, false)
 
 	// truncate now
 	<-time.After(100 * time.Millisecond)
@@ -446,7 +452,7 @@ type TailTest struct {
 
 func NewTailTest(name string, t *testing.T) TailTest {
 	tt := TailTest{name, ".test/" + name, make(chan struct{}), t}
-	err := os.MkdirAll(tt.path, os.ModeTemporary|0700)
+	err := os.MkdirAll(tt.path, os.ModeTemporary|0o700)
 	if err != nil {
 		tt.Fatal(err)
 	}
@@ -455,14 +461,14 @@ func NewTailTest(name string, t *testing.T) TailTest {
 }
 
 func (t TailTest) CreateFile(name string, contents string) {
-	err := ioutil.WriteFile(t.path+"/"+name, []byte(contents), 0600)
+	err := ioutil.WriteFile(t.path+"/"+name, []byte(contents), 0o600)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
 func (t TailTest) AppendToFile(name string, contents string) {
-	err := ioutil.WriteFile(t.path+"/"+name, []byte(contents), 0600|os.ModeAppend)
+	err := ioutil.WriteFile(t.path+"/"+name, []byte(contents), 0o600|os.ModeAppend)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -485,7 +491,7 @@ func (t TailTest) RenameFile(oldname string, newname string) {
 }
 
 func (t TailTest) AppendFile(name string, contents string) {
-	f, err := os.OpenFile(t.path+"/"+name, os.O_APPEND|os.O_WRONLY, 0600)
+	f, err := os.OpenFile(t.path+"/"+name, os.O_APPEND|os.O_WRONLY, 0o600)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -497,7 +503,7 @@ func (t TailTest) AppendFile(name string, contents string) {
 }
 
 func (t TailTest) TruncateFile(name string, contents string) {
-	f, err := os.OpenFile(t.path+"/"+name, os.O_TRUNC|os.O_WRONLY, 0600)
+	f, err := os.OpenFile(t.path+"/"+name, os.O_TRUNC|os.O_WRONLY, 0o600)
 	if err != nil {
 		t.Fatal(err)
 	}

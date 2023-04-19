@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/hpcloud/tail"
+	"github.com/feiyuw/tail"
 )
 
 func args2config() (tail.Config, int64) {
@@ -44,7 +44,7 @@ func main() {
 		go tailFile(filename, config, done)
 	}
 
-	for _, _ = range flag.Args() {
+	for range flag.Args() {
 		<-done
 	}
 }
