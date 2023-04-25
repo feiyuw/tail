@@ -1,4 +1,5 @@
-// +build linux darwin freebsd netbsd openbsd
+//go:build aix
+// +build aix
 
 package tail
 
